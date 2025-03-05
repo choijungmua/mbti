@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import start_puppy from "../../asset/image/start_puppy.png";
 import { questions as allQuestions } from "../../data/data";
+import anime from 'animejs';
 
 // 각 MBTI 유형별로 2개의 질문을 랜덤하게 선택하는 함수
 const selectRandomQuestions = () => {
@@ -36,39 +37,55 @@ function Quiz() {
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
-  const [questions, setQuestions] = useState([]);
-  const [dogImage, setDogImage] = useState("");
+  const [questions, setQuestions] = useState(selectRandomQuestions());
+  const [dogImages, setDogImages] = useState(() => {
+    // localStorage에서 미리 로드된 이미지들을 가져옴
+    const preloadedImages = localStorage.getItem('preloadedDogImages');
+    return preloadedImages ? JSON.parse(preloadedImages) : [start_puppy];
+  });
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isNextLoading, setIsNextLoading] = useState(false);
 
-  // 강아지 이미지를 axios로 불러오는 함수
-  const fetchDogImage = async () => {
-    try {
-      const response = await axios.get("https://dog.ceo/api/breeds/image/random");
-      setDogImage(response.data.message);
-    } catch (error) {
-      console.error("강아지 이미지 불러오기 실패:", error);
-    }
+  const animateContent = (isOut = false) => {
+    anime({
+      targets: '.quiz-content',
+      opacity: isOut ? [1, 0] : [0, 1],
+      translateX: isOut ? [0, -20] : [-20, 0],
+      duration: 300,
+      easing: 'easeInOutQuad',
+      delay: anime.stagger(100)
+    });
   };
 
-  useEffect(() => {
-    // 컴포넌트가 마운트될 때 랜덤 질문 선택
-    setQuestions(selectRandomQuestions());
-  }, []);
+  const handleImageLoad = () => {
+    setIsImageLoaded(true);
+    setIsNextLoading(false);
+    animateContent(false);
+    
+    // 이미지 로드 후 부드러운 페이드인
+    anime({
+      targets: '.quiz-image',
+      opacity: [0, 1],
+      scale: [0.9, 1],
+      duration: 500,
+      easing: 'easeOutQuad'
+    });
+  };
 
-  useEffect(() => {
-    // 질문이 로드된 후, 또는 질문이 바뀔 때마다 새로운 강아지 이미지 불러오기
-    if (questions.length > 0) {
-      fetchDogImage();
-    }
-  }, [currentQuestion, questions]);
-
-  const handleOptionClick = (optionIndex) => {
+  const handleOptionClick = async (optionIndex) => {
     const newAnswers = [...answers, optionIndex];
     setAnswers(newAnswers);
-
+    
     if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
+      setIsNextLoading(true);
+      animateContent(true);
+      setIsImageLoaded(false);
+      setTimeout(() => {
+        setCurrentQuestion((prev) => prev + 1);
+        setIsNextLoading(false);
+      }, 150);
     } else {
-      // 모든 질문에 답변했을 때 결과 페이지로 이동
       const mbtiResult = calculateMBTIFromAnswers(newAnswers);
       navigate(`/result/${mbtiResult}`, { 
         state: { answers: newAnswers }
@@ -106,8 +123,15 @@ function Quiz() {
     return result;
   };
 
-  if (questions.length === 0) {
-    return <div>로딩 중...</div>;
+  if (isLoading || isNextLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-orange-50 via-orange-50 to-orange-100">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-8xl animate-bounce">🐕</div>
+          <div className="text-xl font-semibold text-orange-500">로딩중...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -115,27 +139,30 @@ function Quiz() {
       {/* 상단 진행 바 */}
       <div className="fixed top-0 left-0 w-full h-2 bg-orange-100 z-10">
         <div 
-          className="h-full bg-orange-400 transition-all duration-300"
+          className="h-full bg-orange-400 transition-all duration-500 ease-out"
           style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
         />
       </div>
 
       {/* 메인 컨테이너 */}
-      <div className="max-w-md mx-auto min-h-screen px-4 py-8 flex flex-col">
+      <div className="max-w-md mx-auto min-h-screen px-4 py-8 flex flex-col animate-fade-in">
         {/* 상단 이미지 */}
-        <div className="flex justify-center items-center py-8 w-[90%] mx-auto">
-          <div className="relative w-full max-w-[200px] sm:max-w-[240px] animate-float">
+        <div className="quiz-content quiz-image flex justify-center items-center py-8" style={{ opacity: 0 }}>
+          <div className="w-[280px] h-[280px] relative">
             <div className="absolute inset-0 bg-orange-300 rounded-[1.25rem] blur-2xl opacity-20 transform -rotate-6"></div>
-            <img
-              src={dogImage || start_puppy}
-              alt="강아지 MBTI"
-              className="relative w-full rounded-[1.25rem] shadow-xl transform hover:scale-105 transition-transform duration-300"
-            />
+            <div className="relative w-full h-full overflow-hidden rounded-[1.25rem] shadow-xl">
+              <img
+                src={dogImages[currentQuestion] || start_puppy}
+                alt="강아지 MBTI"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                onLoad={handleImageLoad}
+              />
+            </div>
           </div>
         </div>
 
         {/* 질문 카드 */}
-        <div className="flex-1 flex flex-col justify-center mb-8">
+        <div className="quiz-content flex-1 flex flex-col justify-center mb-8" style={{ opacity: 0 }}>
           <div className="bg-white rounded-2xl p-6 shadow-lg">
             {/* 진행 상태 */}
             <div className="flex items-center justify-between mb-6">
@@ -158,10 +185,11 @@ function Quiz() {
                 <button
                   key={index}
                   onClick={() => handleOptionClick(index)}
+                  disabled={!isImageLoaded}
                   className="w-full p-5 text-left rounded-xl border-2 border-orange-100
                            hover:border-orange-400 hover:bg-orange-50 active:bg-orange-100
                            transition-all duration-300 text-gray-700 font-medium
-                           shadow-sm hover:shadow-md"
+                           shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {option.split(' (')[0]}
                 </button>

@@ -138,17 +138,20 @@ function Result() {
       <h1 className="text-3xl font-bold text-orange-600 mb-6">당신의 강아지 MBTI 결과!</h1>
       <div className="max-w-md w-full bg-white rounded-2xl p-6 shadow-lg text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{mbti} - {dogInfo.name}</h2>
-        <div className="relative w-full aspect-square mb-6">
-          <img
-            src={mbtiImages[mbti] || mbtiImages.DEFAULT}
-            alt={`${mbti} 강아지`}
-            className="w-full h-full object-contain rounded-lg"
-          />
+        <div className="relative w-full aspect-square mb-6 flex items-center justify-center">
+          <div className="w-full h-full max-w-[300px] max-h-[300px] relative">
+            <div className="absolute inset-0 bg-orange-300 rounded-lg blur-2xl opacity-20 transform -rotate-6"></div>
+            <img
+              src={mbtiImages[mbti] || mbtiImages.DEFAULT}
+              alt={`${mbti} 강아지`}
+              className="w-full h-full object-contain rounded-lg relative z-10 transition-transform duration-300 hover:scale-105"
+            />
+          </div>
         </div>
         <div className="text-gray-700 mb-6 whitespace-pre-line text-left">{dogInfo.description}</div>
         <div className="flex gap-4 justify-center">
           <button
-            className="px-8 py-3 rounded-full bg-orange-400 text-white font-semibold hover:bg-orange-500 transition duration-300 shadow-md"
+            className="px-6 py-4 rounded-full bg-orange-400 text-white font-semibold hover:bg-orange-500 transition duration-300 shadow-md"
             onClick={() => {
               window.location.href = "/";
             }}
@@ -156,7 +159,7 @@ function Result() {
             다시 테스트하기
           </button>
           <button 
-            className={`flex items-center px-8 py-3 rounded-full bg-gradient-to-r ${
+            className={`flex items-center px-6 py-3 rounded-full bg-gradient-to-r ${
               copying 
                 ? 'from-green-400 to-green-600 scale-105' 
                 : 'from-blue-400 to-blue-600'

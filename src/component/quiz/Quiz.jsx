@@ -145,7 +145,7 @@ function Quiz() {
       </div>
 
       {/* 이미지 컨테이너 - 화면 중앙에 고정 */}
-      <div className="relative inset-0 flex justify-center items-center">
+      <div className="relative mt-8 inset-0 flex justify-center items-center">
         <div className="quiz-content quiz-image flex justify-center items-center w-full h-[300px]" style={{ opacity: 0 }}>
           <img
             src={dogImages[currentQuestion] || start_puppy}
